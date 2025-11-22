@@ -69,6 +69,15 @@
 
         /* Iconos SVG */
         .icon { width: 20px; height: 20px; stroke: currentColor; stroke-width: 2; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+
+        /* Estilo para el modal de confirmación */
+        .modal-confirm-content {
+            background: white;
+            border-radius: 12px;
+            max-width: 300px;
+            padding: 20px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
     </style>
 </head>
 <body>
@@ -162,10 +171,14 @@
         render();
     }
 
-    // 2. Utilidades de Fecha
+
+    // 2. Utilidades de Fecha y Formato (MÁXIMA COMPATIBILIDAD - AHORA AL INICIO)
+    
+    const monthNames = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
+
     function getStatus(nextDateStr) {
         const today = new Date(); today.setHours(0,0,0,0);
-        const target = new Date(nextDateStr + 'T00:00:00'); target.setHours(0,0,0,0); // Forzar hora 00:00
+        const target = new Date(nextDateStr + 'T00:00:00'); target.setHours(0,0,0,0); 
         const diffDays = Math.ceil((target - today) / (1000 * 60 * 60 * 24));
         
         if (diffDays < 0) return { label: "ATRASADO", color: "#ef4444", bg: "#fef2f2" };
@@ -175,10 +188,26 @@
     }
 
     function addDays(dateStr, days) {
+        // Usamos una pequeña corrección para asegurar que la hora no afecte el cálculo
         const date = new Date(dateStr + 'T00:00:00');
         date.setDate(date.getDate() + parseInt(days));
         return date.toISOString().split('T')[0];
     }
+    
+    // Función de formato simple (fix de compatibilidad)
+    function formatDate(dateStr) {
+        try {
+            const date = new Date(dateStr + 'T00:00:00');
+            const day = date.getDate();
+            const month = monthNames[date.getMonth()];
+            const year = date.getFullYear();
+            return `${day} ${month} ${year}`;
+        } catch (e) {
+            // Fallback en caso de error de fecha
+            return dateStr;
+        }
+    }
+
 
     // 3. Renderizado (HTML Templates)
     function render() {
@@ -342,7 +371,7 @@
                 <div class="card flex gap-4 items-center">
                     <div style="text-align:center; min-width:50px;">
                         <div style="font-weight:900; font-size:20px;">${new Date(log.date).getDate()}</div>
-                        <div style="font-size:10px; text-transform:uppercase;">${new Date(log.date).toLocaleString('es-ES', { month: 'short' })}</div>
+                        <div style="font-size:10px; text-transform:uppercase;">${monthNames[new Date(log.date).getMonth()]}</div>
                     </div>
                     <div style="border-left: 2px solid #f1f5f9; padding-left:12px; flex:1;">
                         <div class="flex justify-between">
@@ -504,10 +533,8 @@
                 location.reload();
             }
         });
-    }
-
-
-    // 5. Helpers UI (Modal)
+                                                 }
+        // 5. Helpers UI (Modal)
     function openModal(cropId = null, type = 'Insecticida', planId = null, taskName = null) {
         const modal = document.getElementById('logModal');
         const cropSelect = document.getElementById('modalCropId');
@@ -548,7 +575,7 @@
         document.getElementById('app-content').innerHTML = `
             <div style="padding: 20px; color: red; background: #fee2e2; border: 1px solid #fecaca; border-radius: 8px;">
                 <strong>Error Crítico de Inicialización:</strong><br>
-                El script principal no pudo ejecutarse. Posible causa: Incompatibilidad del navegador.<br>
+                El script principal no pudo ejecutarse.<br>
                 Mensaje de error: ${e.message}
             </div>
         `;
