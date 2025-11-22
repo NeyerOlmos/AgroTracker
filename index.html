@@ -3,189 +3,362 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>AgroTracker App</title>
-    
-    <!-- PANTALLA DE CARGA -->
+    <title>AgroTracker</title>
     <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #f1f5f9; margin: 0; -webkit-tap-highlight-color: transparent; }
-        #loading { position: fixed; inset: 0; display: flex; flex-direction: column; justify-content: center; align-items: center; background: white; z-index: 9999; text-align: center; padding: 20px; }
-        .spinner { width: 40px; height: 40px; border: 4px solid #e2e8f0; border-top: 4px solid #059669; border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 20px; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        .error-box { display: none; background: #fee2e2; border: 1px solid #ef4444; color: #b91c1c; padding: 15px; border-radius: 8px; max-width: 90%; text-align: left; margin-top: 20px; }
-    </style>
+        /* --- ESTILOS CSS NATIVOS (Sin dependencias externas) --- */
+        :root {
+            --primary: #059669; /* Emerald 600 */
+            --primary-dark: #047857;
+            --bg: #f1f5f9;
+            --surface: #ffffff;
+            --text-main: #1e293b;
+            --text-light: #64748b;
+            --danger: #ef4444;
+            --radius: 16px;
+            --shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
 
-    <!-- 1. LIBRERÍAS CORE (CDNJS - Más estable) -->
-    <script crossorigin="anonymous" src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
-    <script crossorigin="anonymous" src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
-    <script crossorigin="anonymous" src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js"></script>
-    <script crossorigin="anonymous" src="https://cdn.tailwindcss.com"></script>
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--bg); color: var(--text-main); padding-bottom: 80px; }
+        
+        /* Layout */
+        .container { max-width: 480px; margin: 0 auto; background: var(--surface); min-height: 100vh; position: relative; }
+        .p-4 { padding: 16px; }
+        .mb-4 { margin-bottom: 16px; }
+        .flex { display: flex; }
+        .justify-between { justify-content: space-between; }
+        .items-center { align-items: center; }
+        .gap-2 { gap: 8px; }
+        .gap-4 { gap: 16px; }
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        .hidden { display: none !important; }
+
+        /* Componentes */
+        .card { background: var(--surface); border-radius: var(--radius); padding: 16px; box-shadow: var(--shadow); border: 1px solid #e2e8f0; margin-bottom: 12px; position: relative; }
+        .card.dark { background: #0f172a; color: white; border: none; }
+        
+        .btn { border: none; padding: 12px; border-radius: 12px; font-weight: bold; cursor: pointer; font-size: 14px; transition: transform 0.1s; width: 100%; text-align: center; }
+        .btn:active { transform: scale(0.98); }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-dark { background: #0f172a; color: white; }
+        .btn-icon { background: transparent; padding: 8px; color: #94a3b8; width: auto; }
+        .btn-fab { position: fixed; bottom: 90px; right: 20px; width: 56px; height: 56px; border-radius: 50%; background: #0f172a; color: white; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 6px rgba(0,0,0,0.3); z-index: 100; }
+
+        .input { width: 100%; padding: 12px; border: 1px solid #cbd5e1; border-radius: 8px; background: #f8fafc; font-size: 14px; margin-bottom: 12px; }
+        .label { font-size: 12px; font-weight: bold; color: var(--text-light); text-transform: uppercase; margin-bottom: 4px; display: block; }
+
+        /* Badges */
+        .badge { padding: 4px 8px; border-radius: 12px; font-size: 10px; font-weight: bold; text-transform: uppercase; border: 1px solid transparent; }
+        .badge.Insecticida { background: #fee2e2; color: #b91c1c; border-color: #fecaca; }
+        .badge.Fungicida { background: #ffedd5; color: #c2410c; border-color: #fed7aa; }
+        .badge.Abono { background: #dcfce7; color: #15803d; border-color: #bbf7d0; }
+        .badge.Riego { background: #dbeafe; color: #1d4ed8; border-color: #bfdbfe; }
+        .status-pill { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; }
+        
+        /* Modal */
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1000; display: flex; align-items: flex-end; justify-content: center; opacity: 0; pointer-events: none; transition: opacity 0.2s; }
+        .modal-overlay.open { opacity: 1; pointer-events: auto; }
+        .modal-content { background: white; width: 100%; max-width: 480px; border-radius: 24px 24px 0 0; padding: 24px; transform: translateY(100%); transition: transform 0.3s; max-height: 90vh; overflow-y: auto; }
+        .modal-overlay.open .modal-content { transform: translateY(0); }
+
+        /* Navbar */
+        .navbar { position: fixed; bottom: 0; left: 0; right: 0; background: white; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-around; padding: 12px; z-index: 90; max-width: 480px; margin: 0 auto; }
+        .nav-item { display: flex; flex-direction: column; align-items: center; gap: 4px; color: #94a3b8; font-size: 10px; font-weight: bold; background: none; border: none; width: 100%; }
+        .nav-item.active { color: var(--primary); }
+        .nav-item svg { width: 24px; height: 24px; }
+
+        /* Iconos SVG */
+        .icon { width: 20px; height: 20px; stroke: currentColor; stroke-width: 2; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+    </style>
 </head>
 <body>
 
-    <!-- UI DE CARGA -->
-    <div id="loading">
-        <div class="spinner"></div>
-        <h2 style="font-size: 18px; font-weight: 600; color: #334155;">Cargando AgroTracker...</h2>
-        <p style="color: #64748b; font-size: 14px; margin-top: 10px;">Si esto tarda más de 5 segundos, verifica tu internet.</p>
-        
-        <div id="error-msg" class="error-box">
-            <strong>⚠️ Error de carga detectado:</strong><br>
-            <span id="error-text">Esperando scripts...</span><br><br>
-            <em>Solución: Intenta abrir este archivo con <strong>Google Chrome</strong> usando la opción "Abrir con".</em>
-        </div>
+<div class="container">
+    <div class="p-4" id="app-content">
+        <!-- El contenido se inyecta aquí con JS -->
     </div>
+</div>
 
-    <div id="root"></div>
+<!-- Navbar -->
+<nav class="navbar">
+    <button class="nav-item active" onclick="switchTab('dashboard')" id="nav-dashboard">
+        <svg class="icon" viewBox="0 0 24 24"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        INICIO
+    </button>
+    <button class="nav-item" onclick="switchTab('crops')" id="nav-crops">
+        <svg class="icon" viewBox="0 0 24 24"><path d="M7 20h10"/><path d="M10 20c5.5-2.5.8-6.4 3-10"/><path d="M9.5 9.4c1.1.8 1.8 2.2 2.3 3.7-2 .4-3.2.4-4.8-.3-1.2-.6-2.3-1.9-3-4.2 2.8-.5 4.4 0 5.5.8z"/><path d="M14.1 6a7 7 0 0 0-1.1 4c1.9-.1 3.3-.6 4.3-1.4 1.7-1.3 2.9-3.3 3-5.5-1.4-1.3-3.5-1.7-6.2-1.1z"/></svg>
+        CULTIVOS
+    </button>
+    <button class="nav-item" onclick="switchTab('history')" id="nav-history">
+        <svg class="icon" viewBox="0 0 24 24"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4"/><path d="M12 16h4"/><path d="M8 11h.01"/><path d="M8 16h.01"/></svg>
+        BITÁCORA
+    </button>
+</nav>
 
-    <!-- 2. CONTROL DE ERRORES -->
-    <script>
-        // Si en 3 segundos no carga React, mostramos error
-        setTimeout(function() {
-            if (typeof React === 'undefined') {
-                document.querySelector('.spinner').style.display = 'none';
-                document.getElementById('error-msg').style.display = 'block';
-                document.getElementById('error-text').innerHTML = "No se pudieron cargar las librerías.<br>1. Verifica tu conexión a Internet.<br>2. No abras el archivo desde el Explorador de Archivos interno, usa Chrome.";
-            }
-        }, 3000);
-    </script>
-
-    <!-- 3. APLICACIÓN -->
-    <script type="text/babel">
-        try {
-            const { useState, useEffect, useMemo } = React;
-
-            // --- ICONOS SVG ---
-            const Icons = {
-                Home: (p) => <svg {...p} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>,
-                Sprout: (p) => <svg {...p} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M7 20h10"/><path d="M10 20c5.5-2.5.8-6.4 3-10"/><path d="M9.5 9.4c1.1.8 1.8 2.2 2.3 3.7-2 .4-3.2.4-4.8-.3-1.2-.6-2.3-1.9-3-4.2 2.8-.5 4.4 0 5.5.8z"/><path d="M14.1 6a7 7 0 0 0-1.1 4c1.9-.1 3.3-.6 4.3-1.4 1.7-1.3 2.9-3.3 3-5.5-1.4-1.3-3.5-1.7-6.2-1.1z"/></svg>,
-                ClipboardList: (p) => <svg {...p} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="M12 11h4"/><path d="M12 16h4"/><path d="M8 11h.01"/><path d="M8 16h.01"/></svg>,
-                Plus: (p) => <svg {...p} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M5 12h14"/><path d="M12 5v14"/></svg>,
-                Trash2: (p) => <svg {...p} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/><line x1="10" x2="10" y1="11" y2="17"/><line x1="14" x2="14" y1="11" y2="17"/></svg>,
-                Calendar: (p) => <svg {...p} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>,
-                AlertTriangle: (p) => <svg {...p} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>,
-                Clock: (p) => <svg {...p} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>,
-                CheckCircle: (p) => <svg {...p} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>,
-                X: (p) => <svg {...p} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>,
-                RefreshCcw: (p) => <svg {...p} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 16h5v5"/></svg>,
-                Save: (p) => <svg {...p} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>,
-                Leaf: (p) => <svg {...p} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 20A7 7 0 0 1 9.8 6.1C15.5 5 17 4.48 19 2c1 2 2 4.18 1 8-1.5 5.25-5.25 10-10 10Z"/><path d="M2 21c0-3 1.85-5.36 5.08-6C9.5 14.52 12 13 13 12"/></svg>,
-                Droplets: (p) => <svg {...p} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M7 16.3c2.2 0 4-1.83 4-4.05 0-1.16-.57-2.26-1.71-3.19S7.29 6.75 7 5.3c-.29 1.45-1.14 2.84-2.29 3.76S3 11.1 3 12.25c0 2.22 1.79 4.05 4 4.05z"/><path d="M12.56 6.6A10.97 10.97 0 0 0 14 3.02c.5 2.5 2 4.9 4 6.5s3 3.5 3 5.5a6.98 6.98 0 0 1-11.91 4.97"/></svg>
-            };
-
-            const Icon = ({ name, size = 20, className = "" }) => {
-                const Component = Icons[name];
-                return Component ? <Component width={size} height={size} className={className} /> : null;
-            };
-
-            // --- COMPONENTES UI ---
-            const styles = {
-                pbSafe: { paddingBottom: 'env(safe-area-inset-bottom)' },
-                fadeIn: { animation: 'fadeIn 0.3s ease-out' },
-                card: "bg-white rounded-2xl shadow-sm border border-slate-100 p-4",
-                badge: {
-                    base: "px-2 py-1 rounded-full text-[10px] font-bold border uppercase tracking-wide",
-                    Insecticida: "bg-red-100 text-red-700 border-red-200",
-                    Fungicida: "bg-orange-100 text-orange-700 border-orange-200",
-                    Abono: "bg-green-100 text-green-700 border-green-200",
-                    Herbicida: "bg-purple-100 text-purple-700 border-purple-200",
-                    Riego: "bg-blue-100 text-blue-700 border-blue-200",
-                    default: "bg-slate-100 text-slate-700 border-slate-200"
-                }
-            };
-
-            const Card = ({ children, className = "", onClick }) => (
-                <div onClick={onClick} className={`${styles.card} ${className} ${onClick ? 'cursor-pointer active:scale-95 transition-transform' : ''}`}>
-                    {children}
+<!-- Modal Registro -->
+<div class="modal-overlay" id="logModal">
+    <div class="modal-content">
+        <div class="flex justify-between items-center mb-4">
+            <h2 style="margin:0; font-size: 20px;">Registrar Aplicación</h2>
+            <button class="btn-icon" onclick="closeModal()">✕</button>
+        </div>
+        <form id="logForm" onsubmit="handleLogSubmit(event)">
+            <input type="hidden" name="planId" id="modalPlanId">
+            <label class="label">Cultivo</label>
+            <select name="cropId" id="modalCropId" class="input" required></select>
+            
+            <div class="grid-2">
+                <div>
+                    <label class="label">Tipo</label>
+                    <select name="type" id="modalType" class="input">
+                        <option value="Insecticida">Insecticida</option>
+                        <option value="Fungicida">Fungicida</option>
+                        <option value="Abono">Abono</option>
+                        <option value="Riego">Riego</option>
+                    </select>
                 </div>
-            );
+                <div>
+                    <label class="label">Fecha</label>
+                    <input type="date" name="date" id="modalDate" class="input" required>
+                </div>
+            </div>
+            
+            <label class="label">Producto</label>
+            <input name="product" id="modalProduct" class="input" placeholder="Ej: Urea" required>
+            
+            <label class="label">Dosis / Notas</label>
+            <input name="notes" id="modalNotes" class="input" placeholder="Ej: 500ml - Clima lluvioso">
+            
+            <button type="submit" class="btn btn-primary" style="margin-top: 10px;">GUARDAR</button>
+        </form>
+    </div>
+</div>
 
-            const Badge = ({ type }) => (
-                <span className={`${styles.badge.base} ${styles.badge[type] || styles.badge.default}`}>
-                    {type}
-                </span>
-            );
+<button class="btn-fab" id="fabBtn" onclick="openModal()">
+    <svg class="icon" style="width:28px; height:28px;" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+</button>
 
-            // --- PERSISTENCIA ---
-            function useStickyState(defaultValue, key) {
-                const [value, setValue] = useState(() => {
-                    try {
-                        const stickyValue = window.localStorage.getItem(key);
-                        return stickyValue ? JSON.parse(stickyValue) : defaultValue;
-                    } catch (e) { return defaultValue; }
-                });
+<script>
+    // --- LÓGICA DE LA APLICACIÓN (VANILLA JS) ---
+    
+    // 1. Estado y Persistencia
+    // Variables globales para Firestore (no usadas en esta versión sin dependencias)
+    const __app_id = 'agrotracker-app-id';
+    const __firebase_config = '{}';
+    const __initial_auth_token = '';
 
-                useEffect(() => {
-                    try { window.localStorage.setItem(key, JSON.stringify(value)); } catch (e) {}
-                }, [key, value]);
-                return [value, setValue];
-            }
+    const initialState = {
+        crops: [{ id: 1, name: "Lote Ejemplo", type: "Tomate", date: "2023-10-01", location: "Sector 1" }],
+        plans: [{ id: 1, cropId: 1, taskName: "Abono Inicial", frequency: 15, lastDate: new Date().toISOString().split('T')[0], type: "Abono" }],
+        logs: []
+    };
 
-            // --- APP PRINCIPAL ---
-            function AgroApp() {
-                const INITIAL_CROPS = [{ id: 1, name: "Ejemplo Tomate", type: "Chonto", date: "2023-10-01", location: "Sector 1" }];
-                const INITIAL_PLANS = [{ id: 1, cropId: 1, taskName: "Abono Inicio", frequency: 15, lastDate: new Date().toISOString().split('T')[0], type: "Abono" }];
-                const INITIAL_LOGS = [];
+    // Usamos localStorage, que funciona perfectamente en web
+    let state = JSON.parse(localStorage.getItem('agroState')) || initialState;
+    let currentTab = 'dashboard';
 
-                const [activeTab, setActiveTab] = useState('dashboard');
-                const [crops, setCrops] = useStickyState(INITIAL_CROPS, 'agro_v6_crops');
-                const [plans, setPlans] = useStickyState(INITIAL_PLANS, 'agro_v6_plans');
-                const [logs, setLogs] = useStickyState(INITIAL_LOGS, 'agro_v6_logs');
-                const [isLogModalOpen, setIsLogModalOpen] = useState(false);
-                const [prefilledLog, setPrefilledLog] = useState(null);
-                const [confirmModal, setConfirmModal] = useState({ show: false, title: "", message: "", onConfirm: null });
+    function saveState() {
+        localStorage.setItem('agroState', JSON.stringify(state));
+        render();
+    }
 
-                // Cálculo de Tareas
-                const pendingTasks = useMemo(() => {
-                    const today = new Date(); today.setHours(0,0,0,0);
-                    return plans.map(plan => {
-                        const last = plan.lastDate ? new Date(plan.lastDate + 'T00:00:00') : new Date();
-                        const nextDateObj = new Date(last);
-                        nextDateObj.setDate(nextDateObj.getDate() + parseInt(plan.frequency));
-                        nextDateObj.setHours(0,0,0,0);
-                        const diffDays = Math.ceil((nextDateObj - today) / (1000 * 60 * 60 * 24));
-                        let status = { label: "Futuro", color: "text-slate-400", bg: "bg-slate-50", icon: "CheckCircle" };
-                        if (diffDays < 0) status = { label: "Atrasado", color: "text-red-600", bg: "bg-red-50", icon: "AlertTriangle" };
-                        else if (diffDays === 0) status = { label: "Hoy", color: "text-orange-600", bg: "bg-orange-50", icon: "Clock" };
-                        else if (diffDays <= 7) status = { label: "Esta Semana", color: "text-blue-600", bg: "bg-blue-50", icon: "Calendar" };
-                        const crop = crops.find(c => c.id === parseInt(plan.cropId));
-                        return { ...plan, nextDateObj, status, cropName: crop ? crop.name : 'Borrado', isOrphan: !crop };
-                    }).sort((a, b) => a.nextDateObj - b.nextDateObj);
-                }, [plans, crops]);
+    // 2. Utilidades de Fecha
+    function getStatus(nextDateStr) {
+        const today = new Date(); today.setHours(0,0,0,0);
+        const target = new Date(nextDateStr + 'T00:00:00'); target.setHours(0,0,0,0); // Forzar hora 00:00
+        const diffDays = Math.ceil((target - today) / (1000 * 60 * 60 * 24));
+        
+        if (diffDays < 0) return { label: "ATRASADO", color: "#ef4444", bg: "#fef2f2" };
+        if (diffDays === 0) return { label: "HOY", color: "#ea580c", bg: "#fff7ed" };
+        if (diffDays <= 7) return { label: "ESTA SEMANA", color: "#2563eb", bg: "#eff6ff" };
+        return { label: "FUTURO", color: "#64748b", bg: "#f1f5f9" };
+    }
 
-                const requestConfirm = (title, message, callback) => {
-                    setConfirmModal({ show: true, title, message, onConfirm: () => { callback(); setConfirmModal({ show: false, title: "", message: "", onConfirm: null }); }});
-                };
+    function addDays(dateStr, days) {
+        const date = new Date(dateStr + 'T00:00:00');
+        date.setDate(date.getDate() + parseInt(days));
+        return date.toISOString().split('T')[0];
+    }
 
-                // --- VISTAS ---
-                const DashboardView = () => (
-                    <div className="space-y-6 pb-24" style={styles.fadeIn}>
-                        <div className="flex justify-between items-center mb-2">
-                            <div><h1 className="text-2xl font-bold text-slate-800">AgroTracker</h1><p className="text-slate-500 text-xs flex items-center gap-1"><Icon name="Save" size={12}/> Auto-guardado</p></div>
-                            <button onClick={() => requestConfirm("¿Reiniciar?", "Se borrarán todos los datos.", () => { setCrops(INITIAL_CROPS); setPlans(INITIAL_PLANS); setLogs(INITIAL_LOGS); window.location.reload(); })} className="text-slate-300 p-2 hover:text-red-500"><Icon name="RefreshCcw" size={18}/></button>
-                        </div>
-                        <div className="grid grid-cols-2 gap-4">
-                            <Card className="bg-slate-900 text-white border-none"><span className="text-slate-400 text-[10px] uppercase font-bold tracking-wider">Alertas Hoy</span><span className="text-3xl font-bold mt-1 text-emerald-400">{pendingTasks.filter(t => t.status.label === 'Hoy' || t.status.label === 'Atrasado').length}</span></Card>
-                            <Card><span className="text-slate-400 text-[10px] uppercase font-bold tracking-wider">Cultivos</span><span className="text-3xl font-bold mt-1 text-slate-800">{crops.length}</span></Card>
-                        </div>
+    // 3. Renderizado (HTML Templates)
+    function render() {
+        const content = document.getElementById('app-content');
+        const fab = document.getElementById('fabBtn');
+        
+        // Actualizar Tabs
+        document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+        const navItem = document.getElementById(`nav-${currentTab}`);
+        if(navItem) navItem.classList.add('active');
+
+        if (currentTab === 'dashboard') {
+            fab.style.display = 'flex';
+            renderDashboard(content);
+        } else if (currentTab === 'crops') {
+            fab.style.display = 'none';
+            renderCrops(content);
+        } else {
+            fab.style.display = 'none';
+            renderHistory(content);
+        }
+    }
+
+    function renderDashboard(container) {
+        // Calcular Alertas
+        const alerts = state.plans.map(p => {
+            const nextDate = addDays(p.lastDate, p.frequency);
+            const status = getStatus(nextDate);
+            const crop = state.crops.find(c => c.id == p.cropId);
+            return { ...p, nextDate, status, cropName: crop ? crop.name : 'Borrado', isOrphan: !crop };
+        }).sort((a, b) => new Date(a.nextDate) - new Date(b.nextDate));
+
+        const pendingCount = alerts.filter(a => a.status.label === 'HOY' || a.status.label === 'ATRASADO').length;
+
+        container.innerHTML = `
+            <div class="flex justify-between items-center mb-4">
+                <h1 style="margin:0; font-size: 24px;">Hola, Agricultor</h1>
+                <button class="btn-icon" onclick="resetApp()" style="color:#ef4444">
+                    <svg class="icon" viewBox="0 0 24 24"><path d="M21.5 2v20H2v-2h17.5V4h-15V2z"/><path d="M10 8h2v8h-2zM6 10h2v4H6zM14 10h2v4h-2z"/></svg>
+                </button>
+            </div>
+
+            <div class="grid-2 mb-4">
+                <div class="card dark">
+                    <span class="label" style="color:#94a3b8">Alertas Hoy</span>
+                    <div style="font-size: 32px; font-weight: bold; color: #34d399">${pendingCount}</div>
+                </div>
+                <div class="card">
+                    <span class="label">Cultivos Activos</span>
+                    <div style="font-size: 32px; font-weight: bold;">${state.crops.length}</div>
+                </div>
+            </div>
+
+            <h3 class="mb-4">Agenda de Trabajo</h3>
+            ${alerts.length === 0 ? '<div style="text-align:center; color:#94a3b8; padding:40px;">Todo al día ✅</div>' : ''}
+            
+            ${alerts.map(task => `
+                <div class="card" style="border-left: 4px solid ${task.status.color}">
+                    <div class="flex justify-between">
                         <div>
-                            <h2 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2"><Icon name="Calendar" className="text-emerald-600"/> Agenda</h2>
-                            {pendingTasks.length === 0 ? <div className="text-center py-12 bg-white rounded-2xl border border-dashed border-slate-200"><p className="text-slate-500">Todo al día</p></div> : 
-                            <div className="space-y-3">{pendingTasks.map(task => (<Card key={task.id} className="relative overflow-hidden"><div className={`absolute left-0 top-0 bottom-0 w-1.5 ${task.status.label === 'Atrasado' ? 'bg-red-500' : task.status.label === 'Hoy' ? 'bg-orange-500' : 'bg-emerald-500'}`}></div><div className="flex justify-between items-start pl-2"><div className="flex-1"><div className="flex items-center gap-2 mb-1"><Badge type={task.type} /><span className={`text-[10px] font-bold px-2 py-0.5 rounded flex items-center gap-1 ${task.status.bg} ${task.status.color}`}><Icon name={task.status.icon} size={12}/> {task.status.label}</span></div><h3 className="font-bold text-slate-800">{task.taskName}</h3><p className={`text-sm ${task.isOrphan ? 'text-red-400 italic' : 'text-slate-500'}`}>{task.cropName}</p></div><div className="text-right flex flex-col items-end gap-2"><div><p className="text-[10px] text-slate-400 uppercase font-bold">Próxima</p><p className="font-bold text-slate-700 text-sm">{task.nextDateObj.toLocaleDateString('es-ES', {day:'numeric', month:'short'})}</p></div>{!task.isOrphan ? <button onClick={() => { setPrefilledLog({ cropId: task.cropId, type: task.type, planId: task.id, notes: `Tarea: ${task.taskName}` }); setIsLogModalOpen(true); }} className="bg-slate-900 text-white text-xs px-3 py-2 rounded-lg font-medium shadow-md">Registrar</button> : <button onClick={() => requestConfirm("Borrar", "Borrar esta alerta huérfana", () => setPlans(plans.filter(p=>p.id!==task.id)))} className="text-red-500 p-2 bg-red-50 rounded-lg"><Icon name="Trash2" size={16}/></button>}</div></div></Card>))}</div>}
+                            <div class="flex items-center gap-2 mb-1">
+                                <span class="badge ${task.type}">${task.type}</span>
+                                <span class="status-pill" style="color:${task.status.color}; background:${task.status.bg}">${task.status.label}</span>
+                            </div>
+                            <div style="font-weight:bold; font-size:16px;">${task.taskName}</div>
+                            <div style="color:#64748b; font-size:14px;">${task.cropName}</div>
+                        </div>
+                        <div style="text-align:right">
+                            <div class="label">Próxima</div>
+                            <div style="font-weight:bold;">${formatDate(task.nextDate)}</div>
+                            ${!task.isOrphan ? 
+                                `<button class="btn btn-dark" style="margin-top:8px; padding:6px 12px; font-size:12px;" 
+                                  onclick="openModal(${task.cropId}, '${task.type}', ${task.id}, '${task.taskName.replace(/'/g, "\\'")}')">
+                                  Registrar
+                                </button>` : 
+                                `<button onclick="deletePlan(${task.id})" style="color:red; background:none; border:none; margin-top:5px;">Eliminar</button>`
+                            }
                         </div>
                     </div>
-                );
+                </div>
+            `).join('')}
+        `;
+    }
 
-                const CropsView = () => (
-                    <div className="space-y-8 pb-24" style={styles.fadeIn}>
-                        <h2 className="text-2xl font-bold text-slate-800">Cultivos</h2>
-                        <div className="space-y-6">
-                            {crops.map(crop => (
-                                <Card key={crop.id} className="border-l-4 border-l-emerald-500 relative">
-                                    <button onClick={() => requestConfirm("¿Borrar Cultivo?", "Se borrará el cultivo y sus alertas.", () => { setCrops(crops.filter(c => c.id !== crop.id)); setPlans(plans.filter(p => p.cropId !== crop.id)); })} className="absolute top-4 right-4 text-slate-300 hover:text-red-500 p-2"><Icon name="Trash2" size={18}/></button>
-                                    <div className="flex items-center gap-4 mb-4"><div className="bg-emerald-50 p-3 rounded-xl text-emerald-600"><Icon name="Sprout" size={24}/></div><div className="flex-1 pr-8"><h3 className="font-bold text-lg text-slate-800 leading-tight">{crop.name}</h3><p className="text-sm text-slate-500">{crop.type}</p><div className="flex gap-3 mt-1 text-xs text-slate-400"><span className="flex items-center gap-1"><Icon name="Calendar" size={12}/> {crop.date}</span><span className="flex items-center gap-1"><Icon name="Leaf" size={12}/> {crop.location}</span></div></div></div>
-                                    <div className="bg-slate-50 -mx-4 -mb-4 p-4 border-t border-slate-100 rounded-b-2xl"><h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Alertas Activas</h4><div className="space-y-2">{plans.filter(p => p.cropId === crop.id).length === 0 && <p className="text-xs text-slate-400 italic">Sin alertas</p>}{plans.filter(p => p.cropId === crop.id).map(p => (<div key={p.id} className="flex justify-between items-center bg-white p-2 rounded border border-slate-200"><div className="flex items-center gap-2"><div className={`w-2 h-2 rounded-full ${p.type === 'Abono' ? 'bg-green-500' : 'bg-red-500'}`}></div><span className="text-xs font-bold text-slate-700">{p.taskName}</span><span className="text-[10px] text-slate-400">Cada {p.frequency} días</span></div><button onClick={() => requestConfirm("¿Borrar Alerta?", "Dejarás de recibir avisos.", () => setPlans(plans.filter(x => x.id !== p.id)))} className="text-slate-300 hover:text-red-500"><Icon name="X" size={14}/></button></div>))}</div></div>
-                                </Card>
-                            ))}
+    function renderCrops(container) {
+        container.innerHTML = `
+            <h2 class="mb-4">Mis Cultivos</h2>
+            
+            ${state.crops.map(c => `
+                <div class="card" style="border-left: 4px solid var(--primary)">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <h3 style="margin:0 0 4px 0;">${c.name}</h3>
+                            <div style="color:#64748b; font-size:14px;">${c.type} • ${c.location}</div>
+                            <div style="font-size:12px; color:#94a3b8;">Plantado el ${formatDate(c.date)}</div>
                         </div>
-                        <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100"><h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2"><Icon name="Plus" className="bg-slate-900 text-white rounded-full p-1"/> Nuevo Cultivo</h3><form onSubmit={(e) => { e.preventDefault(); const f = new FormData(e.target); setCrops([...crops, { id: Date.now(), name: f.get('name'), type: f.get('type'), date: f.get('date'), location: f.get('location') }]); e.target.reset(); }} className="space-y-4"><input name="name" required placeholder="Nombre (ej: Lote Maíz)" className="w-full bg-slate-50 rounded-lg p-3 text-sm outline-none" /><div className="grid grid-cols-2 gap-4"><input name="type" placeholder="Variedad" className="w-full bg-slate-50 rounded-lg p-3 text-sm outline-none" /><input name="location" placeholder="Ubicación" className="w-full bg-slate-50 rounded-lg p-3 text-sm outline-none" /></div><input name="date" type="date" required className="w-full bg-slate-50 rounded-lg p-3 text-sm outline-none" /><button className="w-full bg-emerald-600 text-white font-bold py-3 rounded-xl shadow-lg active:scale-95 transition-all">Guardar</button></form></div>
-                        <div className="bg-white p-5 rounded-2xl shadow-sm border border-slate-100"><h3 className="text-lg font-bold text-slate-800 mb-4 flex items-center gap-2"><Icon name="Clock" className="text-slate-400"/> Nueva Alerta</h3><form onSubmit={(e) => { e.preventDefault(); const f = new FormData(e.target); setPlans([...plans, { id: Date.now(), cropId: parseInt(f.get('cropId')), taskName: f.get('taskName'), type: f.get('type'), frequency: parseInt(f.get('frequency')), lastDate: f.get('lastDate') }]); e.target.reset(); }} className="space-y-4"><select name="cropId" className="w-full bg-slate-50 rounded-lg p-3 text-sm outline-none">{crops.map(c=><opti
+                        <button onclick="deleteCrop(${c.id})" style="color:#cbd5e1; background:none; border:none; font-size:20px;">
+                            <svg class="icon" viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M2 6h20"/><path d="M8 6h8V4a2 2 0 0 0-2-2H10a2 2 0 0 0-2 2z"/></svg>
+                        </button>
+                    </div>
+                    
+                    <div style="margin-top:12px; padding-top:12px; border-top:1px solid #f1f5f9;">
+                        <div class="label">Planes Automáticos</div>
+                        ${state.plans.filter(p => p.cropId == c.id).map(p => `
+                            <div class="flex justify-between items-center" style="font-size:13px; margin-top:4px;">
+                                <span>• ${p.taskName} (Cada ${p.frequency} días)</span>
+                                <button onclick="deletePlan(${p.id})" style="color:red; background:none; border:none; padding: 0 4px;">✕</button>
+                            </div>
+                        `).join('') || '<span style="font-size:12px; color:#cbd5e1;">Sin planes</span>'}
+                    </div>
+                </div>
+            `).join('')}
+
+            <div class="card" style="border: 2px dashed #cbd5e1; margin-top:20px;">
+                <h3 style="margin-top:0;">+ Nuevo Cultivo</h3>
+                <form onsubmit="handleAddCrop(event)">
+                    <input name="name" class="input" placeholder="Nombre (Ej: Lote Norte)" required>
+                    <div class="grid-2">
+                        <input name="type" class="input" placeholder="Variedad" required>
+                        <input name="location" class="input" placeholder="Ubicación">
+                    </div>
+                    <label class="label">Fecha Siembra</label>
+                    <input type="date" name="date" class="input" required>
+                    <button class="btn btn-primary">GUARDAR CULTIVO</button>
+                </form>
+            </div>
+
+            <div class="card" style="border: 2px dashed #cbd5e1;">
+                <h3 style="margin-top:0;">⏱ Nueva Alerta Recurrente</h3>
+                <form onsubmit="handleAddPlan(event)">
+                    <select name="cropId" class="input" required>
+                        <option value="" disabled selected>-- Seleccione Cultivo --</option>
+                        ${state.crops.map(c => `<option value="${c.id}">${c.name}</option>`).join('')}
+                    </select>
+                    <input name="taskName" class="input" placeholder="Tarea (Ej: Fertilizar)" required>
+                    <div class="grid-2">
+                        <select name="type" class="input">
+                            <option value="Abono">Abono</option>
+                            <option value="Insecticida">Insecticida</option>
+                            <option value="Fungicida">Fungicida</option>
+                            <option value="Riego">Riego</option>
+                        </select>
+                        <input type="number" name="frequency" class="input" placeholder="Días (Frecuencia)" required>
+                    </div>
+                    <label class="label">Última vez realizado</label>
+                    <input type="date" name="lastDate" class="input" required>
+                    <button class="btn btn-dark">CREAR ALERTA</button>
+                </form>
+            </div>
+        `;
+    }
+
+    function renderHistory(container) {
+        container.innerHTML = `
+            <h2 class="mb-4">Bitácora</h2>
+            ${state.logs.length === 0 ? '<div style="text-align:center; color:#94a3b8; padding:20px;">No hay registros</div>' : ''}
+            
+            ${state.logs.slice().reverse().map(log => {
+                const crop = state.crops.find(c => c.id == log.cropId);
+                return `
+                <div class="card flex gap-4 items-center">
+                    <div style="text-align:center; min-width:50px;">
+                        <div style="font-weight:900; font-size:20px;">${new Date(log.date).getDate()}</div>
+                        <div style="font-size:10px; text-transform:uppercase;">${new Date(log.date).toLocaleString('es-ES', { month: 'short' })}</div>
+                    </div>
+                    <div style="border-left: 2px solid #f1f5f9; padding-left:12px; flex:1;">
+                        <div class="flex justify-between">
+                            <div style="font-weight:bold;">${log.product}</div>
+                            <span class="badge ${log.type}">${log.type}</span>
+                        </div>
+                        <div style="font-size:12px; color:var(--primary);">${crop ? crop.name : 'Cultivo eliminado'}</div>
+                        <div style="font-size:12px; color:#64748b; margin-top:4px;">${log.notes || ''}</div>
+                    </div>
+                    <button onclick="deleteLog(${log.id})" style="color:#ef4444; background:none; border:none; font-size:18px;">
+                        <svg class="icon" viewBox="0 0 24 24"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+                    </button>
+                </div>
+            `}).join('')}
+        `;
+    }
+
+    // 4. Manejadores de Eventos (Actions)
+   
