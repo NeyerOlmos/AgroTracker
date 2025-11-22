@@ -361,4 +361,200 @@
     }
 
     // 4. Manejadores de Eventos (Actions)
-   
+    
+    function switchTab(tab) {
+        currentTab = tab;
+        render();
+    }
+
+    function handleAddCrop(e) {
+        e.preventDefault();
+        const f = new FormData(e.target);
+        if (f.get('name') && f.get('type') && f.get('date')) {
+            state.crops.push({
+                id: Date.now(),
+                name: f.get('name'),
+                type: f.get('type'),
+                location: f.get('location'),
+                date: f.get('date')
+            });
+            e.target.reset();
+            saveState();
+        }
+    }
+
+    function handleAddPlan(e) {
+        e.preventDefault();
+        const f = new FormData(e.target);
+        if (f.get('cropId') && f.get('taskName') && f.get('frequency') && f.get('lastDate')) {
+            state.plans.push({
+                id: Date.now(),
+                cropId: parseInt(f.get('cropId')),
+                taskName: f.get('taskName'),
+                type: f.get('type'),
+                frequency: parseInt(f.get('frequency')),
+                lastDate: f.get('lastDate')
+            });
+            e.target.reset();
+            saveState();
+            // Implementación simple de un modal de confirmación
+            if (document.getElementById('app-content')) {
+                document.getElementById('app-content').insertAdjacentHTML('beforebegin', `
+                    <div id="temp-alert" style="position:fixed; top:10px; left:50%; transform:translateX(-50%); background:#34d399; color:white; padding:10px 20px; border-radius:8px; z-index:1001; font-weight:bold;">
+                        Alerta creada con éxito!
+                    </div>
+                `);
+                setTimeout(() => document.getElementById('temp-alert')?.remove(), 3000);
+            }
+        }
+    }
+
+    function handleLogSubmit(e) {
+        e.preventDefault();
+        const f = new FormData(e.target);
+        const newDate = f.get('date');
+        
+        // Guardar Log
+        state.logs.push({
+            id: Date.now(),
+            cropId: parseInt(f.get('cropId')),
+            type: f.get('type'),
+            date: newDate,
+            product: f.get('product'),
+            notes: f.get('notes')
+        });
+
+        // Actualizar Plan si existe
+        const planId = document.getElementById('modalPlanId').value;
+        if(planId) {
+            const plan = state.plans.find(p => p.id == parseInt(planId));
+            if(plan) plan.lastDate = newDate;
+        } else {
+            // Lógica inteligente: actualizar plan si coincide cultivo y tipo
+            const matchingPlan = state.plans.find(p => p.cropId == parseInt(f.get('cropId')) && p.type == f.get('type'));
+            if(matchingPlan) matchingPlan.lastDate = newDate;
+        }
+
+        closeModal();
+        saveState();
+    }
+
+    // Funciones de Borrado (Usando modal de confirmación simple)
+    function showCustomConfirm(message, callback) {
+        const modalId = 'custom-confirm-modal';
+        
+        // Remover cualquier modal anterior
+        const existingModal = document.getElementById(modalId);
+        if (existingModal) existingModal.remove();
+        
+        const modalHTML = `
+            <div class="modal-overlay open" id="${modalId}" style="align-items: center; justify-content: center; background:rgba(0,0,0,0.7);">
+                <div class="modal-content modal-confirm-content" style="transform:none;">
+                    <p style="margin-top:0; font-weight:bold;">Confirmación</p>
+                    <p>${message}</p>
+                    <div class="flex gap-2 justify-between">
+                        <button class="btn" style="background:#e2e8f0; color:#1e293b;" onclick="document.getElementById('${modalId}').remove(); window.runCallback(false);">Cancelar</button>
+                        <button class="btn btn-danger" style="background:var(--danger); color:white;" onclick="document.getElementById('${modalId}').remove(); window.runCallback(true);">Confirmar</button>
+                    </div>
+                </div>
+            </div>
+        `;
+        document.body.insertAdjacentHTML('beforeend', modalHTML);
+        
+        // Asignar el callback a una función global temporal
+        // Usamos una función global simple para evitar problemas de alcance (scope)
+        window.runCallback = (result) => {
+            callback(result);
+            delete window.runCallback;
+        };
+    }
+
+    function deleteCrop(id) {
+        showCustomConfirm('¿Eliminar cultivo? Se borrarán también sus alertas.', (confirmed) => {
+            if(confirmed) {
+                state.crops = state.crops.filter(c => c.id != id);
+                state.plans = state.plans.filter(p => p.cropId != id);
+                saveState();
+            }
+        });
+    }
+    
+    function deletePlan(id) {
+        showCustomConfirm('¿Dejar de recibir alertas para esta tarea?', (confirmed) => {
+            if(confirmed) {
+                state.plans = state.plans.filter(p => p.id != id);
+                saveState();
+            }
+        });
+    }
+
+    function deleteLog(id) {
+        showCustomConfirm('¿Borrar registro de la bitácora?', (confirmed) => {
+            if(confirmed) {
+                state.logs = state.logs.filter(l => l.id != id);
+                saveState();
+            }
+        });
+    }
+
+    function resetApp() {
+        showCustomConfirm('ATENCIÓN: Se borrarán todos los datos y volverá al estado inicial. ¿Continuar?', (confirmed) => {
+            if(confirmed) {
+                localStorage.removeItem('agroState');
+                location.reload();
+            }
+        });
+    }
+
+
+    // 5. Helpers UI (Modal)
+    function openModal(cropId = null, type = 'Insecticida', planId = null, taskName = null) {
+        const modal = document.getElementById('logModal');
+        const cropSelect = document.getElementById('modalCropId');
+        
+        // Limpiar select
+        cropSelect.innerHTML = ''; 
+        if(state.crops.length === 0) {
+            // Mostrar mensaje de error si no hay cultivos y salir
+            showCustomConfirm('Necesitas añadir un Cultivo antes de registrar una aplicación.', () => {});
+            return; 
+        }
+
+        // Llenar select de cultivos
+        cropSelect.innerHTML = state.crops.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
+        
+        // Pre-llenar datos
+        if(cropId) cropSelect.value = cropId;
+        document.getElementById('modalType').value = type;
+        document.getElementById('modalDate').value = new Date().toISOString().split('T')[0];
+        document.getElementById('modalPlanId').value = planId || '';
+        document.getElementById('modalNotes').value = taskName ? `Tarea: ${taskName}` : '';
+        document.getElementById('modalProduct').value = '';
+
+        modal.classList.add('open');
+    }
+
+    function closeModal() {
+        document.getElementById('logModal').classList.remove('open');
+    }
+
+
+    // 6. Inicialización
+    // Llamar a render() inmediatamente después de que el script cargue
+    try {
+        render(); 
+    } catch (e) {
+        // En caso de error, muestra un mensaje de depuración
+        document.getElementById('app-content').innerHTML = `
+            <div style="padding: 20px; color: red; background: #fee2e2; border: 1px solid #fecaca; border-radius: 8px;">
+                <strong>Error Crítico de Inicialización:</strong><br>
+                El script principal no pudo ejecutarse. Posible causa: Incompatibilidad del navegador.<br>
+                Mensaje de error: ${e.message}
+            </div>
+        `;
+        console.error("Error en la inicialización:", e);
+    }
+    
+</script>
+</body>
+</html>
